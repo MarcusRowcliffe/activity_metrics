@@ -13,7 +13,9 @@
 #		timeZone
 
 
-library(activity)
+#library(activity)
+#Use this to load development version of activity from github (fitact now saves bootstrap results to pdf slot):
+devtools::source_url("https://raw.githubusercontent.com/MarcusRowcliffe/activity/V1.4_dev/R/activity_code.r")
 library(insol)
 library(pbapply)
 library(circular)
