@@ -14,12 +14,15 @@
 
 
 #library(activity)
-#Use this to load development version of activity from github (fitact now saves bootstrap results to pdf slot):
-devtools::source_url("https://raw.githubusercontent.com/MarcusRowcliffe/activity/V1.4_dev/R/activity_code.r")
+library(activity)
 library(insol)
 library(pbapply)
 library(circular)
 source("activity_metric_functions20201203.R")
+
+#Use this to load development version of activity from github (fitact now saves bootstrap results to pdf slot):
+devtools::source_url("https://raw.githubusercontent.com/MarcusRowcliffe/activity/V1.4_dev/R/activity_code.r")
+
 # Load data ----
 
 # need to add the errorbarplot# source("01_errorbarplot.r")
@@ -31,6 +34,42 @@ source("activity_metric_functions20201203.R")
 # Brocket - cathemeral
 
 data(BCItime)
+
+##
+##partAct testing##
+x <- subset(BCItime, species=="ocelot")$time * 2*pi #choose data
+fit <- fitact(x, sample="d", reps=100) #fit model
+brks <- c(7, 17, 19, 22.5) * pi/12 #choose some arbitrary break points
+(res <- partAct(fit, brks)) #calculate partial activity
+
+#some checks
+sum(res$act.prpn[,"est"]) #check proportion activity sums to 1
+td <- diff(c(0,brks,2*pi)) #check average of partial activity levels is the same as fit@act
+td <- c(td[2:(length(td)-1)], sum(td[c(1,length(td))]))
+sum(res$act.level[,"est"] * td/sum(td))
+fit@act
+
+#plot pattern with break points and partAct estimates
+plot(fit, xunit="r", yunit="d", ylim=c(0,0.55))
+for(b in c(0,brks,2*pi)) lines(rep(b,2), 0:1, col=2)
+x <- brks+td/2
+x <- ifelse(x>2*pi, x-2*pi, x)
+text(x, 0.55, round(res$act.prpn[,"est"], 2), col=3, cex=0.7)
+text(x, 0.5, round(res$act.level[,"est"], 2), col=4, cex=0.7)
+mtext("prpn", 4, at=0.55, las=1, cex=0.7, col=3, adj=-0.2)
+mtext("level", 4, at=0.5, las=1, cex=0.7, col=4, adj=-0.2)
+
+#see if error bars look reasonable
+library(ggplot2)
+plot(1,1)
+prpn <- data.frame(time=x, res$act.prpn)
+levl <- data.frame(time=x, res$act.level)
+ggplot(prpn, aes(time, est)) + geom_point() + geom_errorbar(aes(ymin=est-1.96*se, ymax=est+1.96*se)) + theme_classic()
+ggplot(prpn, aes(time, est)) + geom_point() + geom_errorbar(aes(ymin=lcl, ymax=ucl)) + theme_classic()
+ggplot(levl, aes(time, est)) + geom_point() + geom_errorbar(aes(ymin=est-1.96*se, ymax=est+1.96*se)) + theme_classic()
+ggplot(levl, aes(time, est)) + geom_point() + geom_errorbar(aes(ymin=lcl, ymax=ucl)) + theme_classic()
+
+##############
 
 table(BCItime$species)
 #Fit with confidence limits (limited reps to speed up)

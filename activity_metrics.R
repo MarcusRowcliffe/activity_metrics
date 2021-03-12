@@ -33,6 +33,61 @@ SunInfo<- function(datetime, lat, long, tmz, creps=NULL){
   data.frame(cbind(Hrise,Hset,Daylength,Twilightlength, Nightlength, Night.with.Twil, Midday, Midnight))
 }
 
+## Activity metrics for parts of the daily cycle ##
+#INPUT
+# fit: an activity model of type actmod
+# breaks: a vector of radian times marking breaks between time periods
+
+#OUTPUT
+#A list with elements:
+# breaks: the original breaks input (sorted if necessary)
+# p.act: the proportion of overall activity in the given period
+# act.level: the activity level in the given period
+
+#Periods run from the corresponding break to the next, wrapping from last to
+#first break for the final period.
+
+partAct <- function(fit, breaks){
+
+  #TO DO
+  #errors catching: fit not actmod, breaks not radian, only 1 break
+
+  paf1 <- function(x) tapply(x, i, sum)*2*pi/length(x)
+  paf2 <- function(x) paf1(x)/(max(x)*tdif)
+  pdf <- head(fit@pdf, -1)
+
+  #index assigning time points to ranges
+  tt <- pdf[,"x"]
+  tbgrid <- expand.grid(tt, breaks)
+  difmat <- matrix(tbgrid[1]>tbgrid[2], ncol=length(breaks))
+  i <- apply(difmat, 1, sum)
+  i[i==0] <- max(i)
+
+  #time difference between breaks
+  breaks <- sort(breaks)
+  brk <- breaks
+  if(!0 %in% breaks) brk <- c(0,brk)
+  if(!2*pi %in% breaks) brk <- c(brk,2*pi)
+  tdif <- diff(brk)
+  tdif <- c(tdif[2:(length(tdif)-1)], sum(tdif[c(1,length(tdif))]))
+
+  pact <- paf1(pdf[,"y"])
+  pactlev <- paf2(pdf[,"y"])
+  if(ncol(pdf)>2){
+    pact.bs <- apply(pdf[,6:ncol(pdf)], 2, paf1)
+    pactlev.bs <- apply(pdf[,6:ncol(pdf)], 2, paf2)
+    pact <- cbind(est=pact,
+                  se=apply(pact.bs, 1, sd),
+                  lcl=apply(pact.bs, 1, quantile, 0.025),
+                  ucl=apply(pact.bs, 1, quantile, 0.975))
+    pactlev <- cbind(est=pactlev,
+                     se=apply(pactlev.bs, 1, sd),
+                     lcl=apply(pactlev.bs, 1, quantile, 0.025),
+                     ucl=apply(pactlev.bs, 1, quantile, 0.975))
+  }
+
+  list(breaks=breaks, act.prpn=pact, act.level=pactlev)
+}
 
 ## Activity Classiffication: Using Information about the sun, classifies ##
 ## events as diurnal (ocurred between sunrise and sunset), crepsuscular  ##
