@@ -18,7 +18,7 @@ library(activity)
 library(insol)
 library(pbapply)
 library(circular)
-source("activity_metric_functions20201203.R")
+source("activity_metrics.R")
 
 #Use this to load development version of activity from github (fitact now saves bootstrap results to pdf slot):
 devtools::source_url("https://raw.githubusercontent.com/MarcusRowcliffe/activity/V1.4_dev/R/activity_code.r")
@@ -38,8 +38,9 @@ data(BCItime)
 ##
 ##partAct testing##
 x <- subset(BCItime, species=="ocelot")$time * 2*pi #choose data
-fit <- fitact(x, sample="d", reps=100) #fit model
-brks <- c(7, 17, 19, 22.5) * pi/12 #choose some arbitrary break points
+mod <- fitact(x, sample="d", reps=100, wt=rep(1,length(x))) #fit model
+View(fit@pdf)
+brks <- c(17, 22.5, 7, 19) * pi/12 #choose some arbitrary break points
 (res <- partAct(fit, brks)) #calculate partial activity
 
 #some checks
@@ -77,14 +78,16 @@ table(BCItime$species)
 par(mfrow=c(3,3))
 species.classifications<-list()
 for (i in 1:length(unique(BCItime$species))){
-species <- subset(BCItime, species==unique(BCItime$species)[i])
-time.rad<-2*pi*species$time
-mod <- fitact(time.rad, sample="data", reps=10)
-plot(mod, "radians", "density", main=paste(species$species[1]), las=1)
-datetime <- as.POSIXct(species$date, format = "%d/%m/%Y %H:%M")
-species.classifications[[i]]<-ActType(datetime, 9.15, -80, -5, 18)
+  species <- subset(BCItime, species==unique(BCItime$species)[i])
+  time.rad<-2*pi*species$time
+  mod <- fitact(time.rad, sample="data", reps=10)
+  plot(mod, "radians", "density", main=paste(species$species[1]), las=1)
+  datetime <- as.POSIXct(species$date, format = "%d/%m/%Y %H:%M")
+  species.classifications[[i]]<-ActType(datetime, 9.15, -80, -5, 18)
 }
 names(species.classifications)<- unique(BCItime$species)
+species.classifications$agouti$`activity type`
+
 
 # Activity type ----
 
@@ -147,6 +150,7 @@ ActType(datetime, 9.15, -80, -5, 18)
 #	5: pairwise significance of differences between given row and the following
 #	6: groupings based on significance of pairwise comparisons
 #	7: flags "true" turning points (max/min within groups exluding those intermediate groups)
+x <- subset(BCItime, species=="ocelot")$time*2*pi
 Sig.turning.points<-tp.est(time.rad) # Works (as in gives a table, but many warnings)
 
 warnings()

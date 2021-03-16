@@ -209,6 +209,48 @@ tp.def <- function(mod, nx=1000){
   cbind(tp,ht,truetp)
 }
 
+##############
+plot(x, y, type="l")
+points(x, y)
+points(tp,tpd,col=2)
+points(cp,cpd,col=3)
+
+tp.def.dev <- function(y, x=seq(0,2*pi,len=length(y))){
+#  y <- c(0.7,1.5,1.9,2.1,2.2,2.4,2.8,3.6,4,4.2,4.3,3.8,3.1,2.5,1,0.5,0.2,0,0.1,0.3,0.7)
+#  x=seq(0,2*pi,len=length(y))
+  dx <- diff(x[1:2])
+  dy1 <- diff(y)
+  dy1 <- c(tail(dy1, 1), dy1)
+  dy2 <- diff(dy1)
+  dy2 <- c(dy2, dy2[1])
+  i <- which(diff(sign(dy1)) !=0) #tp location index
+  a <- dy2[i] / (2*dx^2)
+  b <- (dy1[i+1] - a*(x[i+1]^2 - x[i]^2)) / dx
+  c <- y[i] - b*x[i] - a*x[i]^2
+  tp <- -b/(2*a)
+  tpd <- c + b*tp +a*tp^2
+
+  j <- which(diff(sign(dy2)) !=0) #tp location index
+  p <- abs(dy2[j+1]) / (abs(dy2[j])+abs(dy2[j+1]))
+  cp <- x[j] + dx * p #change points
+  cpd <- y[j] + dy1[j+1] * p
+
+  list(tp=cbind(x=tp, y=tpd), cp=cbind(x=cp, y=cpd))
+}
+
+res <- tp.def.dev(mod@pdf[,2])
+bs <- apply(mod@pdf[,6:10], 2, tp.def.dev)
+
+plot(mod, xunit="r", yunit="d")#, xlim=c(5.29,5.36), ylim=c(0.411,0.413))
+points(res$tp, col=2, pch=16)
+points(res$cp, col=4, pch=16)
+
+k <- 4
+lines(mod@pdf[,c(1,5+k)], col="grey")
+points(bs[[k]]$tp, col=2)
+points(bs[[k]]$cp, col=4)
+##############
+
 match.tp <- function(btp,tp){
   bn <- length(btp)
   n <- length(tp)
